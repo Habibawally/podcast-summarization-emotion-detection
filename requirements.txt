@@ -1,0 +1,9 @@
+uvicorn
+librosa
+numpy
+matplotlib
+torch
+transformers
+pydub
+Pillow
+openai-whisper
