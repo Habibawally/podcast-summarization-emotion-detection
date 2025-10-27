@@ -65,7 +65,8 @@ The system provides a **simple Tkinter-based GUI**, allowing users to upload aud
   - Spectral Bandwidth
   - Spectral Rolloff
   - MFCCs (13 coefficients)
-  - 
+  <img width="823" height="80" alt="Screenshot 2025-10-27 185344" src="https://github.com/user-attachments/assets/4d0e2e97-0d26-4a70-ad4c-d84debe9468e" />
+
 - **Classification Logic:** Rule-based model mapping energy, pitch, and ZCR to emotion categories:
   - Neutral
   - Happy
@@ -130,5 +131,6 @@ Copy code
 ```bash
 pip install -r requirements.txt
 python podcast_summary_system.py
+
 
 
