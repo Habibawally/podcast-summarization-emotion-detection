@@ -20,7 +20,7 @@ class EmotionDetector:
             try:
                 y, sr = librosa.load(audio_path, sr=22050)
             except Exception as e:
-                print(f"Error loading audio: {e}")
+                print(f"❌ Error loading audio: {e}")
                 traceback.print_exc()
                 return {}, None, None
         else:
@@ -28,33 +28,33 @@ class EmotionDetector:
 
         features = {}
         try:
+            # Zero Crossing Rate
             zcr = librosa.feature.zero_crossing_rate(y)
             features['zcr_mean'] = float(np.mean(zcr))
 
+            # Root Mean Square Energy
             rmse = librosa.feature.rms(y=y)
             features['rmse_mean'] = float(np.mean(rmse))
 
+            # MFCC
             mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
             for i in range(13):
                 features[f'mfcc{i+1}_mean'] = float(np.mean(mfccs[i]))
 
-            spectral_centroids = librosa.feature.spectral_centroid(y=y, sr=sr)[0]
-            features['spectral_centroid_mean'] = float(np.mean(spectral_centroids))
+            # Spectral Features
+            features['spectral_centroid_mean'] = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
+            features['spectral_bandwidth_mean'] = float(np.mean(librosa.feature.spectral_bandwidth(y=y, sr=sr)))
+            features['spectral_rolloff_mean'] = float(np.mean(librosa.feature.spectral_rolloff(y=y, sr=sr)))
 
-            spectral_bandwidth = librosa.feature.spectral_bandwidth(y=y, sr=sr)[0]
-            features['spectral_bandwidth_mean'] = float(np.mean(spectral_bandwidth))
-
-            spectral_rolloff = librosa.feature.spectral_rolloff(y=y, sr=sr)[0]
-            features['spectral_rolloff_mean'] = float(np.mean(spectral_rolloff))
-
-            print("Feature extraction completed successfully")
+            print("✅ Feature extraction completed successfully")
             return features, y, sr
         except Exception as e:
-            print(f"Error during feature extraction: {e}")
+            print(f"❌ Error during feature extraction: {e}")
             traceback.print_exc()
             return features, y, sr
 
     def detect_emotions(self, audio_path):
+        """Detect the emotion based on extracted features."""
         try:
             features, y, sr = self.extract_features(audio_path)
             if not features or y is None:
@@ -64,6 +64,7 @@ class EmotionDetector:
             pitch = features.get('spectral_centroid_mean', 0)
             zcr = features.get('zcr_mean', 0)
 
+            # Simple rule-based emotion classification
             if energy > 0.1 and pitch > 2000:
                 primary = 'happy'
             elif energy > 0.08 and zcr > 0.1:
@@ -80,46 +81,54 @@ class EmotionDetector:
             scores = {e: 0.1 for e in self.emotions}
             scores[primary] = 0.5
 
+            # Generate visualization for debugging/insight
+            self.visualize_audio((y, sr), features, save_dir="visualizations")
+
             return {'primary_emotion': primary, 'emotion_scores': scores, 'audio_data': (y, sr)}
         except Exception as e:
-            print(f"Error detecting emotions: {e}")
+            print(f"❌ Error detecting emotions: {e}")
             traceback.print_exc()
             return {'primary_emotion': 'unknown', 'emotion_scores': {e: 0 for e in self.emotions}}
 
-    def visualize_audio(self, audio_data, save_dir="visualizations"):
+    def visualize_audio(self, audio_data, features, save_dir="visualizations"):
+        """Visualize how we detect emotions using audio features."""
         try:
             y, sr = audio_data
             os.makedirs(save_dir, exist_ok=True)
-            paths = {}
 
-            # Waveform
+            # 🔹 1. Waveform with ZCR
             plt.figure(figsize=(10, 4))
-            librosa.display.waveshow(y, sr=sr)
-            path_wave = os.path.join(save_dir, "waveform.png")
-            plt.title("Waveform")
-            plt.savefig(path_wave); plt.close()
-            paths["waveform"] = path_wave
+            librosa.display.waveshow(y, sr=sr, alpha=0.7)
+            plt.title(f"Waveform (ZCR Mean: {features['zcr_mean']:.4f})")
+            plt.xlabel("Time (s)")
+            plt.ylabel("Amplitude")
+            plt.tight_layout()
+            plt.savefig(os.path.join(save_dir, "waveform_zcr.png"))
+            plt.close()
 
-            # Spectrogram
+            # 🔹 2. RMS Energy over time
+            rms = librosa.feature.rms(y=y)[0]
             plt.figure(figsize=(10, 4))
-            spec = librosa.feature.melspectrogram(y=y, sr=sr)
-            spec_db = librosa.power_to_db(spec, ref=np.max)
-            librosa.display.specshow(spec_db, sr=sr, x_axis='time', y_axis='mel')
-            path_spec = os.path.join(save_dir, "spectrogram.png")
-            plt.title("Spectrogram")
-            plt.savefig(path_spec); plt.close()
-            paths["spectrogram"] = path_spec
+            plt.plot(rms, color='r')
+            plt.title(f"Energy (RMS Mean: {features['rmse_mean']:.4f})")
+            plt.xlabel("Frame")
+            plt.ylabel("RMS Energy")
+            plt.tight_layout()
+            plt.savefig(os.path.join(save_dir, "rms_energy.png"))
+            plt.close()
 
-            # MFCC
+            # 🔹 3. MFCC Visualization
             plt.figure(figsize=(10, 4))
             mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
             librosa.display.specshow(mfccs, sr=sr, x_axis='time')
-            path_mfcc = os.path.join(save_dir, "mfcc.png")
-            plt.title("MFCC")
-            plt.savefig(path_mfcc); plt.close()
-            paths["mfcc"] = path_mfcc
+            plt.colorbar(format='%+2.0f dB')
+            plt.title("MFCC Coefficients")
+            plt.tight_layout()
+            plt.savefig(os.path.join(save_dir, "mfcc_visualization.png"))
+            plt.close()
 
-            return paths
+            print("✅ Visualizations saved in 'visualizations' folder.")
+
         except Exception as e:
-            print(f"Error in visualization: {e}")
-            return {}
+            print(f"❌ Error in visualization: {e}")
+            traceback.print_exc()

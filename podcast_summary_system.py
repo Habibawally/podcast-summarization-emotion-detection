@@ -141,7 +141,7 @@ class PodcastApp:
         except Exception as e:
             self.root.after(0, lambda: self.text.insert(tk.END, f"❌ Error: {e}\n"))
 
-
+    
 if __name__ == "__main__":
     root = tk.Tk()
     app = PodcastApp(root)
