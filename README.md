@@ -111,9 +111,6 @@ A clean desktop interface to:
 ## ⚙️ Installation
 
 ```bash
-# 1️⃣ Clone the repository
-git clone https://github.com/YOUR_USERNAME/podcast-summarization-emotion-detection.git
-cd podcast-summarization-emotion-detection
 
 # 2️⃣ Install dependencies
 pip install -r requirements.txt
@@ -131,6 +128,7 @@ Copy code
 ```bash
 pip install -r requirements.txt
 python podcast_summary_system.py
+
 
 
 
